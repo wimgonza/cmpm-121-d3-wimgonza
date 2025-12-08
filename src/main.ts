@@ -2,8 +2,9 @@
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./_leafletWorkaround.ts";
+import luck from "./_luck.ts";
 
-// --- 1. Create the map ---
+// --- Create the map ---
 const mapContainer = document.createElement("div");
 mapContainer.id = "map";
 mapContainer.style.width = "100%";
@@ -24,13 +25,39 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
 }).addTo(map);
 
-// --- 2. Draw the player's location on the map ---
+// --- Draw the player's location on the map ---
 const playerMarker = L.marker(CLASSROOM).addTo(map);
 playerMarker.bindTooltip("You are here!", { permanent: true });
 playerMarker.addTo(map);
 
-// --- 3. Draw a rectangle representing one cell on the map ---
+// --- Define grid cells ---
 const cellSizeDegrees = 0.0001;
+const gridSize = 5;
+const cellTokens = new Map<string, number | null>();
+
+function cellKey(i: number, j: number): string {
+  return `${i},${j}`;
+}
+
+function tokenForCell(i: number, j: number): number | null {
+  const key = cellKey(i, j);
+  if (cellTokens.has(key)) {
+    return cellTokens.get(key)!;
+  }
+
+  const r = luck(`cell(${i},${j})`);
+  const thresholds = [
+    { max: 0.7, value: null },
+    { max: 0.9, value: 1 },
+    { max: 0.97, value: 2 },
+    { max: Infinity, value: 4 },
+  ];
+  const value = thresholds.find(t => r < t.max)?.value ?? null;
+
+  cellTokens.set(key, value);
+  return value;
+}
+
 function cellBounds(i: number, j: number) {
   return L.latLngBounds(
     [CLASSROOM.lat + i * cellSizeDegrees, CLASSROOM.lng + j * cellSizeDegrees],
@@ -41,12 +68,33 @@ function cellBounds(i: number, j: number) {
   );
 }
 
-L.rectangle(cellBounds(0, 0), { color: "blue", weight: 1 }).addTo(map);
-
-// --- 4. Use loops to draw a whole grid of cells on the map ---
-const gridSize = 5;
+// --- Draw the grid of cells and show token values ---
 for (let i = -gridSize; i <= gridSize; i++) {
   for (let j = -gridSize; j <= gridSize; j++) {
-    L.rectangle(cellBounds(i, j), { color: "gray", weight: 1 }).addTo(map);
+    const bounds = cellBounds(i, j);
+    const _rectangle = L.rectangle(bounds, { color: "gray", weight: 1 }).addTo(
+      map,
+    );
+
+    const token = tokenForCell(i, j);
+    if (token !== null) {
+      const center = bounds.getCenter();
+      L.marker(center, {
+        icon: L.divIcon({
+          className: "token-label",
+          html: `<div style="color: red; font-weight: bold;">${token}</div>`,
+        }),
+      }).addTo(map);
+    }
   }
 }
+
+// --- Inventory Display ---
+const inventoryPanelDiv = document.createElement("div");
+inventoryPanelDiv.id = "inventoryPanel";
+inventoryPanelDiv.style.padding = "1rem";
+inventoryPanelDiv.style.fontWeight = "bold";
+inventoryPanelDiv.textContent = "Holding: none";
+document.body.append(inventoryPanelDiv);
+
+const _inventory: number | null = null;
