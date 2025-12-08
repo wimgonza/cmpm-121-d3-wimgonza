@@ -31,6 +31,8 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 - [x] player can pick up nearby tokens if they don't already have one
 - [x] marker is removed when the token is picked up by the player
 - [x] inventory updates in real time
+- [x] player can combine equal tokens to create a new token of double the value
+- [x] token label is updated after combining
 
 ## D3.b: Globe-spanning Gameplay
 

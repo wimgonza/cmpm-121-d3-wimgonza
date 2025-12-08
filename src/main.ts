@@ -30,9 +30,9 @@ const playerMarker = L.marker(CLASSROOM).addTo(map);
 playerMarker.bindTooltip("You are here!", { permanent: true });
 playerMarker.addTo(map);
 
-// --- Define grid cells ---
+// --- Define grid cells and tokens ---
 const cellSizeDegrees = 0.0001;
-const gridSize = 5;
+const gridSize = 30;
 const interactionRadius = 3;
 
 interface cellData {
@@ -82,7 +82,7 @@ function updateInventoryDisplay() {
   }
 }
 
-// --- Draw the grid of cells with token values and click handlers ---
+// --- Draw the grid of cells with assigned token values and add click handlers ---
 for (let i = -gridSize; i <= gridSize; i++) {
   for (let j = -gridSize; j <= gridSize; j++) {
     const key = cellKey(i, j);
@@ -112,6 +112,7 @@ for (let i = -gridSize; i <= gridSize; i++) {
 
     cellTokens.set(key, { token: value, labelMarker: marker });
 
+    // Click handler for picking up or crafting tokens
     rect.on("click", () => {
       if (!inRange(i, j)) {
         return;
@@ -119,19 +120,40 @@ for (let i = -gridSize; i <= gridSize; i++) {
 
       const cell = cellTokens.get(key)!;
 
-      if (cell.token !== null && heldToken === null) {
+      if (heldToken === null && cell.token !== null) {
+        heldToken = cell.token;
+        cell.token = null;
+        if (cell.labelMarker) {
+          map.removeLayer(cell.labelMarker);
+          cell.labelMarker = undefined;
+        }
+        updateInventoryDisplay();
         return;
       }
 
-      heldToken = cell.token;
+      if (heldToken !== null && cell.token !== null) {
+        const newValue = heldToken + cell.token;
+        heldToken = null;
 
-      cell.token = null;
+        if (cell.labelMarker) {
+          cell.labelMarker.remove();
+        }
 
-      if (cell.labelMarker) {
-        map.removeLayer(cell.labelMarker);
-        cell.labelMarker = undefined;
+        cell.token = newValue;
+
+        cell.labelMarker = L.marker(bounds.getCenter(), {
+          icon: L.divIcon({
+            className: "token-label",
+            html:
+              `<div style="color: red; font-weight: bold;">${newValue}</div>`,
+          }),
+        }).addTo(map);
+
+        cell.labelMarker = marker;
+
+        updateInventoryDisplay();
+        return;
       }
-      updateInventoryDisplay();
     });
   }
 }
