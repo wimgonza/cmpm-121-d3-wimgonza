@@ -98,6 +98,16 @@ function generateTokenValue(i: number, j: number): number | null {
   return null;
 }
 
+// Create a token marker
+function createTokenMarker(i: number, j: number, value: number) {
+  return L.marker(cellBounds(i, j).getCenter(), {
+    icon: L.divIcon({
+      className: "token-label",
+      html: `<div style="${TOKEN_STYLE}">${value}</div>`,
+    }),
+  }).addTo(map);
+}
+
 // --- Cell clicks (memoryless) ---
 function handleCellClick(i: number, j: number) {
   const key = cellKey(i, j);
@@ -121,12 +131,7 @@ function handleCellClick(i: number, j: number) {
     if (cell.labelMarker) cell.labelMarker.remove();
 
     cell.value = newValue;
-    cell.labelMarker = L.marker(cellBounds(i, j).getCenter(), {
-      icon: L.divIcon({
-        className: "token-label",
-        html: `<div style="${TOKEN_STYLE}">${newValue}</div>`,
-      }),
-    }).addTo(map);
+    cell.labelMarker = createTokenMarker(i, j, newValue);
 
     updateInventoryDisplay();
 
@@ -135,6 +140,7 @@ function handleCellClick(i: number, j: number) {
         "Congratulations! You've created a token with value 8 or higher and won the game!",
       );
     }
+    return;
   }
 }
 
@@ -148,14 +154,7 @@ function drawCell(i: number, j: number) {
   rect.on("click", () => handleCellClick(i, j));
 
   const value = generateTokenValue(i, j);
-  const marker = value !== null
-    ? L.marker(bounds.getCenter(), {
-      icon: L.divIcon({
-        className: "token-label",
-        html: `<div style="${TOKEN_STYLE}">${value}</div>`,
-      }),
-    }).addTo(map)
-    : undefined;
+  const marker = value !== null ? createTokenMarker(i, j, value) : undefined;
 
   visibleMarkers.set(key, { value, rectangle: rect, labelMarker: marker });
 }
