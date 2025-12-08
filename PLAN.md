@@ -41,7 +41,7 @@ Key gameplay challenge:
 
 ### Steps D3.b
 
-- [] globe spanning grid that is able to move
-- [] ...
-- [] ...
-- [] ...
+- [x] globe spanning grid that is able to move
+- [x] memoryless cells
+- [] add movement buttons for cardinal directions
+- [] update playerCell logical position
