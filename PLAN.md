@@ -1,8 +1,9 @@
-# D3: {game title goes here}
+# D3: GeoCrafter
 
 ## Game Design Vision
 
-{a few-sentence description of the game mechanics}
+GeoCrafter is a location-based crafting game where players explore a map to collect
+tokens from nearby locations. Tokens can be combined into higher-value crafted items.
 
 ## Technologies
 
@@ -47,3 +48,15 @@ Key gameplay challenge:
 - [x] update playerCell logical position
 - [x] update interaction radius
 - [x] victory condition for a token reaching a certain value
+
+## D3.c: Object persistence
+
+Key technical challenge:
+Key gameplay challenge:
+
+### Steps D3.c
+
+- [] Cell persistent memory state even when not visible
+- [] Add persistent state to drawCell
+- [] Make cell clicks persistent
+- [] Update the visible cells function
