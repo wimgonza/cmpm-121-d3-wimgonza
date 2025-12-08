@@ -11,10 +11,8 @@ mapContainer.style.width = "100%";
 mapContainer.style.height = "100vh";
 document.body.appendChild(mapContainer);
 
-const CLASSROOM = L.latLng(36.997936938057016, -122.05703507501151);
-
 const map = L.map(mapContainer, {
-  center: CLASSROOM,
+  center: [36.997936938057016, -122.05703507501151],
   zoom: 19,
   zoomControl: false,
   scrollWheelZoom: false,
@@ -26,7 +24,9 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 // --- Draw the player's location on the map ---
-const playerMarker = L.marker(CLASSROOM).addTo(map);
+const playerMarker = L.marker([36.997936938057016, -122.05703507501151]).addTo(
+  map,
+);
 playerMarker.bindTooltip("You are here!", { permanent: true });
 playerMarker.addTo(map);
 
@@ -64,8 +64,8 @@ function updateInventoryDisplay() {
 
 // --- Determine player's current cell ---
 const playerCell = {
-  i: Math.floor(CLASSROOM.lat / cellSizeDegrees),
-  j: Math.floor(CLASSROOM.lng / cellSizeDegrees),
+  i: Math.floor(36.997936938057016 / cellSizeDegrees),
+  j: Math.floor(-122.05703507501151 / cellSizeDegrees),
 };
 
 // --- Helper functions ---
@@ -134,7 +134,7 @@ function handleCellClick(i: number, j: number) {
 // --- Draw the one of the cells ---
 function drawCell(i: number, j: number) {
   const key = cellKey(i, j);
-  if (visibleMarkers.has(key)) return; // already drawn
+  if (visibleMarkers.has(key)) return;
 
   const bounds = cellBounds(i, j);
   const rect = L.rectangle(bounds, { color: "gray", weight: 1 }).addTo(map);
@@ -172,6 +172,8 @@ function updateVisibleCells() {
       newVisible.add(cellKey(i, j));
     }
   }
+
+  // Remove cells that are no longer visible
   for (const [key, cell] of visibleMarkers.entries()) {
     if (!newVisible.has(key)) {
       if (cell.labelMarker) cell.labelMarker.remove();
@@ -184,3 +186,40 @@ function updateVisibleCells() {
 // --- Initial drawing ---
 map.on("moveend", updateVisibleCells);
 updateVisibleCells();
+
+// --- Player movement buttons ---
+const controlPanelDiv = document.createElement("div");
+controlPanelDiv.id = "controlPanel";
+controlPanelDiv.style.padding = "1rem";
+controlPanelDiv.style.display = "flex";
+controlPanelDiv.style.gap = "0.5rem";
+document.body.append(controlPanelDiv);
+
+function movePlayer(di: number, dj: number) {
+  playerCell.i += di;
+  playerCell.j += dj;
+
+  const newLat = (playerCell.i + 0.5) * cellSizeDegrees;
+  const newLng = (playerCell.j + 0.5) * cellSizeDegrees;
+  const newLatLng = L.latLng(newLat, newLng);
+
+  playerMarker.setLatLng(newLatLng);
+  map.panTo(newLatLng);
+  updateVisibleCells();
+}
+
+const directions = [
+  { label: "↑", di: 1, dj: 0 },
+  { label: "↓", di: -1, dj: 0 },
+  { label: "←", di: 0, dj: -1 },
+  { label: "→", di: 0, dj: 1 },
+];
+
+directions.forEach(({ label, di, dj }) => {
+  const btn = document.createElement("button");
+  btn.textContent = label;
+  btn.style.width = "2rem";
+  btn.style.height = "2rem";
+  btn.addEventListener("click", () => movePlayer(di, dj));
+  controlPanelDiv.append(btn);
+});

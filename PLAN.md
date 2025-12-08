@@ -43,5 +43,7 @@ Key gameplay challenge:
 
 - [x] globe spanning grid that is able to move
 - [x] memoryless cells
-- [] add movement buttons for cardinal directions
-- [] update playerCell logical position
+- [x] add movement buttons for cardinal directions
+- [x] update playerCell logical position
+- [x] update interaction radius
+- [] victory condition for a token reaching a certain value
