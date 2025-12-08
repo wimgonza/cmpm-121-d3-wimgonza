@@ -52,7 +52,7 @@ function tokenForCell(i: number, j: number): number | null {
     { max: 0.97, value: 2 },
     { max: Infinity, value: 4 },
   ];
-  const value = thresholds.find(t => r < t.max)?.value ?? null;
+  const value = thresholds.find((t) => r < t.max)?.value ?? null;
 
   cellTokens.set(key, value);
   return value;
