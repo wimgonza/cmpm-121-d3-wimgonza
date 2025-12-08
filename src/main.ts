@@ -31,9 +31,10 @@ playerMarker.bindTooltip("You are here!", { permanent: true });
 playerMarker.addTo(map);
 
 // --- Define grid cells and tokens ---
-const cellSizeDegrees = 0.0001;
-const interactionRadius = 3;
-const tokenStyle = "color: red; font-weight: bold;";
+const CELL_DEGREES = 0.0001;
+const INTERACTION_RADIUS = 3;
+const TOKEN_STYLE = "color: red; font-weight: bold;";
+const VICTORY_THRESHOLD = 8;
 
 interface cellData {
   value: number | null;
@@ -64,8 +65,8 @@ function updateInventoryDisplay() {
 
 // --- Determine player's current cell ---
 const playerCell = {
-  i: Math.floor(36.997936938057016 / cellSizeDegrees),
-  j: Math.floor(-122.05703507501151 / cellSizeDegrees),
+  i: Math.floor(36.997936938057016 / CELL_DEGREES),
+  j: Math.floor(-122.05703507501151 / CELL_DEGREES),
 };
 
 // --- Helper functions ---
@@ -75,8 +76,8 @@ function cellKey(i: number, j: number): string {
 
 function cellBounds(i: number, j: number) {
   return L.latLngBounds(
-    [i * cellSizeDegrees, j * cellSizeDegrees],
-    [(i + 1) * cellSizeDegrees, (j + 1) * cellSizeDegrees],
+    [i * CELL_DEGREES, j * CELL_DEGREES],
+    [(i + 1) * CELL_DEGREES, (j + 1) * CELL_DEGREES],
   );
 }
 
@@ -85,7 +86,7 @@ function cellDistance(i: number, j: number, playerI: number, playerJ: number) {
 }
 
 function inRange(i: number, j: number, playerI: number, playerJ: number) {
-  return cellDistance(i, j, playerI, playerJ) <= interactionRadius;
+  return cellDistance(i, j, playerI, playerJ) <= INTERACTION_RADIUS;
 }
 
 // --- Draw the grid of cells with assigned token values ---
@@ -123,11 +124,17 @@ function handleCellClick(i: number, j: number) {
     cell.labelMarker = L.marker(cellBounds(i, j).getCenter(), {
       icon: L.divIcon({
         className: "token-label",
-        html: `<div style="${tokenStyle}">${newValue}</div>`,
+        html: `<div style="${TOKEN_STYLE}">${newValue}</div>`,
       }),
     }).addTo(map);
 
     updateInventoryDisplay();
+
+    if (newValue >= VICTORY_THRESHOLD) {
+      alert(
+        "Congratulations! You've created a token with value 8 or higher and won the game!",
+      );
+    }
   }
 }
 
@@ -145,7 +152,7 @@ function drawCell(i: number, j: number) {
     ? L.marker(bounds.getCenter(), {
       icon: L.divIcon({
         className: "token-label",
-        html: `<div style="${tokenStyle}">${value}</div>`,
+        html: `<div style="${TOKEN_STYLE}">${value}</div>`,
       }),
     }).addTo(map)
     : undefined;
@@ -157,12 +164,12 @@ function drawCell(i: number, j: number) {
 function updateVisibleCells() {
   const bounds = map.getBounds();
   const topLeft = {
-    i: Math.floor(bounds.getNorth() / cellSizeDegrees),
-    j: Math.floor(bounds.getWest() / cellSizeDegrees),
+    i: Math.floor(bounds.getNorth() / CELL_DEGREES),
+    j: Math.floor(bounds.getWest() / CELL_DEGREES),
   };
   const bottomRight = {
-    i: Math.floor(bounds.getSouth() / cellSizeDegrees),
-    j: Math.floor(bounds.getEast() / cellSizeDegrees),
+    i: Math.floor(bounds.getSouth() / CELL_DEGREES),
+    j: Math.floor(bounds.getEast() / CELL_DEGREES),
   };
 
   const newVisible = new Set<string>();
@@ -199,8 +206,8 @@ function movePlayer(di: number, dj: number) {
   playerCell.i += di;
   playerCell.j += dj;
 
-  const newLat = (playerCell.i + 0.5) * cellSizeDegrees;
-  const newLng = (playerCell.j + 0.5) * cellSizeDegrees;
+  const newLat = (playerCell.i + 0.5) * CELL_DEGREES;
+  const newLng = (playerCell.j + 0.5) * CELL_DEGREES;
   const newLatLng = L.latLng(newLat, newLng);
 
   playerMarker.setLatLng(newLatLng);

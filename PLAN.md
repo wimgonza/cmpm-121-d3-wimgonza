@@ -46,4 +46,4 @@ Key gameplay challenge:
 - [x] add movement buttons for cardinal directions
 - [x] update playerCell logical position
 - [x] update interaction radius
-- [] victory condition for a token reaching a certain value
+- [x] victory condition for a token reaching a certain value
