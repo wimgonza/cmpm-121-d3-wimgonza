@@ -28,7 +28,9 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 - [x] use provided luck() function to assign token values based on grid cell coordinates
 - [x] display token value directly inside each cell (red)
 - [x] adds inventory that has shows nothing currently
-- [ ] ...
+- [x] player can pick up nearby tokens if they don't already have one
+- [x] marker is removed when the token is picked up by the player
+- [x] inventory updates in real time
 
 ## D3.b: Globe-spanning Gameplay
 

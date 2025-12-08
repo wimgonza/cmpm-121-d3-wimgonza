@@ -33,29 +33,17 @@ playerMarker.addTo(map);
 // --- Define grid cells ---
 const cellSizeDegrees = 0.0001;
 const gridSize = 5;
-const cellTokens = new Map<string, number | null>();
+const interactionRadius = 3;
+
+interface cellData {
+  token: number | null;
+  labelMarker?: L.Marker | undefined;
+}
+
+const cellTokens = new Map<string, cellData>();
 
 function cellKey(i: number, j: number): string {
   return `${i},${j}`;
-}
-
-function tokenForCell(i: number, j: number): number | null {
-  const key = cellKey(i, j);
-  if (cellTokens.has(key)) {
-    return cellTokens.get(key)!;
-  }
-
-  const r = luck(`cell(${i},${j})`);
-  const thresholds = [
-    { max: 0.7, value: null },
-    { max: 0.9, value: 1 },
-    { max: 0.97, value: 2 },
-    { max: Infinity, value: 4 },
-  ];
-  const value = thresholds.find((t) => r < t.max)?.value ?? null;
-
-  cellTokens.set(key, value);
-  return value;
 }
 
 function cellBounds(i: number, j: number) {
@@ -68,25 +56,12 @@ function cellBounds(i: number, j: number) {
   );
 }
 
-// --- Draw the grid of cells and show token values ---
-for (let i = -gridSize; i <= gridSize; i++) {
-  for (let j = -gridSize; j <= gridSize; j++) {
-    const bounds = cellBounds(i, j);
-    const _rectangle = L.rectangle(bounds, { color: "gray", weight: 1 }).addTo(
-      map,
-    );
+function cellDistance(i: number, j: number) {
+  return Math.sqrt(i * i + j * j);
+}
 
-    const token = tokenForCell(i, j);
-    if (token !== null) {
-      const center = bounds.getCenter();
-      L.marker(center, {
-        icon: L.divIcon({
-          className: "token-label",
-          html: `<div style="color: red; font-weight: bold;">${token}</div>`,
-        }),
-      }).addTo(map);
-    }
-  }
+function inRange(i: number, j: number) {
+  return cellDistance(i, j) <= interactionRadius;
 }
 
 // --- Inventory Display ---
@@ -97,4 +72,66 @@ inventoryPanelDiv.style.fontWeight = "bold";
 inventoryPanelDiv.textContent = "Holding: none";
 document.body.append(inventoryPanelDiv);
 
-const _inventory: number | null = null;
+let heldToken: number | null = null;
+
+function updateInventoryDisplay() {
+  if (heldToken === null) {
+    inventoryPanelDiv.textContent = "Holding: none";
+  } else {
+    inventoryPanelDiv.textContent = `Holding: ${heldToken}`;
+  }
+}
+
+// --- Draw the grid of cells with token values and click handlers ---
+for (let i = -gridSize; i <= gridSize; i++) {
+  for (let j = -gridSize; j <= gridSize; j++) {
+    const key = cellKey(i, j);
+    const bounds = cellBounds(i, j);
+    const rect = L.rectangle(bounds, { color: "gray", weight: 1 });
+    rect.addTo(map);
+
+    // Determine token value for this cell
+    const r = luck(`cell(${i},${j})`);
+    const thresholds = [
+      { max: 0.7, value: null },
+      { max: 0.9, value: 1 },
+      { max: 0.97, value: 2 },
+      { max: Infinity, value: 4 },
+    ];
+    const value = thresholds.find((t) => r < t.max)?.value ?? null;
+
+    let marker: L.Marker | undefined;
+    if (value !== null) {
+      marker = L.marker(bounds.getCenter(), {
+        icon: L.divIcon({
+          className: "token-label",
+          html: `<div style="color: red; font-weight: bold;">${value}</div>`,
+        }),
+      }).addTo(map);
+    }
+
+    cellTokens.set(key, { token: value, labelMarker: marker });
+
+    rect.on("click", () => {
+      if (!inRange(i, j)) {
+        return;
+      }
+
+      const cell = cellTokens.get(key)!;
+
+      if (cell.token !== null && heldToken === null) {
+        return;
+      }
+
+      heldToken = cell.token;
+
+      cell.token = null;
+
+      if (cell.labelMarker) {
+        map.removeLayer(cell.labelMarker);
+        cell.labelMarker = undefined;
+      }
+      updateInventoryDisplay();
+    });
+  }
+}
