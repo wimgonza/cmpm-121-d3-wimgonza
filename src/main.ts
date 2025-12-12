@@ -4,7 +4,13 @@ import "leaflet/dist/leaflet.css";
 import "./_leafletWorkaround.ts";
 import luck from "./_luck.ts";
 
-// --- Create the map ---
+// --- Game Constants ---
+const CELL_DEGREES = 0.0001;
+const INTERACTION_RADIUS = 3;
+const TOKEN_STYLE = "color: red; font-weight: bold;";
+const VICTORY_THRESHOLD = 8;
+
+// --- Map Setup ---
 const mapContainer = document.createElement("div");
 mapContainer.id = "map";
 mapContainer.style.width = "100%";
@@ -18,34 +24,32 @@ const map = L.map(mapContainer, {
   scrollWheelZoom: false,
 });
 
-// Add OpenStreetMap tile layer
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
 }).addTo(map);
 
-// --- Draw the player's location on the map ---
 const playerMarker = L.marker([36.997936938057016, -122.05703507501151]).addTo(
   map,
 );
 playerMarker.bindTooltip("You are here!", { permanent: true });
 playerMarker.addTo(map);
 
-// --- Define grid cells and tokens ---
-const CELL_DEGREES = 0.0001;
-const INTERACTION_RADIUS = 3;
-const TOKEN_STYLE = "color: red; font-weight: bold;";
-const VICTORY_THRESHOLD = 8;
-
+// --- Type Definitions ---
 interface cellData {
   value: number | null;
   labelMarker?: L.Marker | undefined;
   rectangle?: L.Rectangle | undefined;
 }
 
-// Persistent storage for modified cells
+// --- Game State ---
 const persistentCells = new Map<string, cellData>();
 
 let heldToken: number | null = null;
+
+const playerCell = {
+  i: Math.floor(36.997936938057016 / CELL_DEGREES),
+  j: Math.floor(-122.05703507501151 / CELL_DEGREES),
+};
 
 // --- Inventory Display ---
 const inventoryPanelDiv = document.createElement("div");
@@ -63,7 +67,6 @@ function updateInventoryDisplay() {
   }
 }
 
-// --- Victory Popup Element ---
 const victoryDiv = document.createElement("div");
 victoryDiv.id = "victory";
 victoryDiv.style.position = "absolute";
@@ -78,12 +81,6 @@ victoryDiv.style.display = "none";
 victoryDiv.style.zIndex = "1000";
 victoryDiv.textContent = "Congratulations!";
 document.body.append(victoryDiv);
-
-// --- Determine player's current cell ---
-const playerCell = {
-  i: Math.floor(36.997936938057016 / CELL_DEGREES),
-  j: Math.floor(-122.05703507501151 / CELL_DEGREES),
-};
 
 // --- Helper functions ---
 function cellKey(i: number, j: number) {
@@ -105,7 +102,6 @@ function inRange(i: number, j: number) {
   return cellDistance(i, j) <= INTERACTION_RADIUS;
 }
 
-// --- Draw the grid of cells with assigned token values ---
 function generateTokenValue(i: number, j: number): number | null {
   const r = luck(`cell(${i},${j})`);
   if (r >= 0.7 && r < 0.9) return 1;
@@ -163,20 +159,17 @@ function loadGame() {
   }
 }
 
-// --- Cell clicks ---
+// --- Cell Click Handling ---
 function handleCellClick(i: number, j: number) {
   const key = cellKey(i, j);
   const cell = persistentCells.get(key);
-  if (!cell) return;
-  if (!inRange(i, j)) return;
+  if (!cell || !inRange(i, j)) return;
 
   if (heldToken === null && cell.value !== null) {
     heldToken = cell.value;
     cell.value = null;
-    if (cell.labelMarker) {
-      cell.labelMarker.remove();
-      cell.labelMarker = undefined;
-    }
+    cell.labelMarker?.remove();
+    cell.labelMarker = undefined;
     updateInventoryDisplay();
     saveGame();
     return;
@@ -186,9 +179,7 @@ function handleCellClick(i: number, j: number) {
     const newValue = heldToken * 2;
     heldToken = null;
 
-    if (cell.labelMarker) {
-      cell.labelMarker.remove();
-    }
+    cell.labelMarker?.remove();
 
     cell.value = newValue;
     cell.labelMarker = L.marker(cellBounds(i, j).getCenter(), {
@@ -207,11 +198,8 @@ function handleCellClick(i: number, j: number) {
   }
 }
 
-// --- Draw the one of the cells ---
 function drawCell(i: number, j: number) {
   const key = cellKey(i, j);
-
-  // Reuse persistent cell data if it exists
   let cell = persistentCells.get(key);
 
   if (!cell) {
@@ -238,7 +226,6 @@ function drawCell(i: number, j: number) {
   }
 }
 
-// --- Update visible cells dynamically ---
 function updateVisibleCells() {
   const bounds = map.getBounds();
   const topLeft = {
@@ -259,23 +246,19 @@ function updateVisibleCells() {
     }
   }
 
-  // Remove cells that are no longer visible
   for (const [key, cell] of persistentCells.entries()) {
     if (!newVisible.has(key)) {
-      if (cell.rectangle) {
-        cell.rectangle.remove();
-        cell.rectangle = undefined;
-      }
-      if (cell.labelMarker) {
-        cell.labelMarker.remove();
-        cell.labelMarker = undefined;
-      }
+      cell.rectangle?.remove();
+      cell.rectangle = undefined;
+      cell.labelMarker?.remove();
+      cell.labelMarker = undefined;
     }
   }
 }
 
 // --- Initial drawing ---
 map.on("moveend", updateVisibleCells);
+
 if (!loadGame()) {
   updateVisibleCells();
   saveGame();
@@ -321,7 +304,7 @@ directions.forEach(({ label, di, dj }) => {
   controlPanelDiv.append(btn);
 });
 
-// --- New Game Button ---
+// --- Reset Game and Movement Toggle ---
 const resetBtn = document.createElement("button");
 resetBtn.textContent = "New Game";
 resetBtn.style.marginLeft = "1rem";
@@ -333,7 +316,6 @@ resetBtn.addEventListener("click", () => {
 });
 controlPanelDiv.append(resetBtn);
 
-// --- Movement toggle button ---
 const movementToggleBtn = document.createElement("button");
 movementToggleBtn.textContent = "Use GPS";
 movementToggleBtn.style.marginLeft = "1rem";
@@ -366,6 +348,7 @@ movementToggleBtn.addEventListener("click", () => {
   }
 });
 
+// --- Geolocation Handling ---
 function startGeolocation() {
   if (!navigator.geolocation) return alert("Geolocation not supported.");
   geoWatchId = navigator.geolocation.watchPosition(
@@ -388,5 +371,16 @@ function stopGeolocation() {
   if (geoWatchId !== null) {
     navigator.geolocation.clearWatch(geoWatchId);
     geoWatchId = null;
+
+    playerCell.i = Math.round(playerCell.i);
+    playerCell.j = Math.round(playerCell.j);
+
+    const newLat = playerCell.i * CELL_DEGREES + CELL_DEGREES / 2;
+    const newLng = playerCell.j * CELL_DEGREES + CELL_DEGREES / 2;
+    const newLatLng = L.latLng(newLat, newLng);
+    playerMarker.setLatLng(newLatLng);
+    map.panTo(newLatLng);
+    updateVisibleCells();
+    saveGame();
   }
 }
