@@ -56,7 +56,7 @@ Key gameplay challenge:
 
 ### Steps D3.c
 
-- [] Cell persistent memory state even when not visible
-- [] Add persistent state to drawCell
-- [] Make cell clicks persistent
-- [] Update the visible cells function
+- [x] Cell persistent memory state even when not visible
+- [x] Add persistent state to drawCell
+- [x] Make cell clicks persistent
+- [x] Update the visible cells function
