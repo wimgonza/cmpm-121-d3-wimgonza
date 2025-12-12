@@ -114,6 +114,55 @@ function generateTokenValue(i: number, j: number): number | null {
   return null;
 }
 
+// --- Save and load game state ---
+function saveGame() {
+  const cellsObj: Record<string, { value: number | null }> = {};
+  for (const [key, cell] of persistentCells.entries()) {
+    cellsObj[key] = { value: cell.value };
+  }
+
+  const saveData = {
+    heldToken,
+    playerCell,
+    cells: cellsObj,
+    hasWon: victoryDiv.style.display === "block",
+  };
+
+  localStorage.setItem("leafletGameSave", JSON.stringify(saveData));
+}
+
+function loadGame() {
+  const raw = localStorage.getItem("leafletGameSave");
+  if (!raw) return false;
+
+  try {
+    const data = JSON.parse(raw);
+
+    heldToken = data.heldToken;
+    playerCell.i = data.playerCell.i;
+    playerCell.j = data.playerCell.j;
+    updateInventoryDisplay();
+
+    const newLat = playerCell.i * CELL_DEGREES + CELL_DEGREES / 2;
+    const newLng = playerCell.j * CELL_DEGREES + CELL_DEGREES / 2;
+    playerMarker.setLatLng([newLat, newLng]);
+    map.panTo([newLat, newLng]);
+
+    for (const key in data.cells) {
+      persistentCells.set(key, { value: data.cells[key].value });
+    }
+
+    if (data.hasWon) {
+      victoryDiv.style.display = "block";
+    }
+
+    return true;
+  } catch {
+    console.warn("Save data corrupted or invalid. Starting new game.");
+    return false;
+  }
+}
+
 // --- Cell clicks ---
 function handleCellClick(i: number, j: number) {
   const key = cellKey(i, j);
@@ -129,6 +178,7 @@ function handleCellClick(i: number, j: number) {
       cell.labelMarker = undefined;
     }
     updateInventoryDisplay();
+    saveGame();
     return;
   }
 
@@ -153,6 +203,7 @@ function handleCellClick(i: number, j: number) {
     if (newValue >= VICTORY_THRESHOLD) {
       victoryDiv.style.display = "block";
     }
+    saveGame();
   }
 }
 
@@ -225,7 +276,12 @@ function updateVisibleCells() {
 
 // --- Initial drawing ---
 map.on("moveend", updateVisibleCells);
-updateVisibleCells();
+if (!loadGame()) {
+  updateVisibleCells();
+  saveGame();
+} else {
+  updateVisibleCells();
+}
 
 // --- Player movement buttons ---
 const controlPanelDiv = document.createElement("div");
@@ -246,6 +302,7 @@ function movePlayer(di: number, dj: number) {
   playerMarker.setLatLng(newLatLng);
   map.panTo(newLatLng);
   updateVisibleCells();
+  saveGame();
 }
 
 const directions = [
@@ -263,3 +320,15 @@ directions.forEach(({ label, di, dj }) => {
   btn.addEventListener("click", () => movePlayer(di, dj));
   controlPanelDiv.append(btn);
 });
+
+// --- New Game Button ---
+const resetBtn = document.createElement("button");
+resetBtn.textContent = "New Game";
+resetBtn.style.marginLeft = "1rem";
+resetBtn.style.padding = "0.5rem 1rem";
+resetBtn.style.fontWeight = "bold";
+resetBtn.addEventListener("click", () => {
+  localStorage.removeItem("leafletGameSave");
+  location.reload();
+});
+controlPanelDiv.append(resetBtn);
