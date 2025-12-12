@@ -14,7 +14,7 @@ const VICTORY_THRESHOLD = 8;
 const mapContainer = document.createElement("div");
 mapContainer.id = "map";
 mapContainer.style.width = "100%";
-mapContainer.style.height = "100vh";
+mapContainer.style.height = "80vh";
 document.body.appendChild(mapContainer);
 
 const map = L.map(mapContainer, {
