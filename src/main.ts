@@ -75,7 +75,8 @@ victoryDiv.style.backgroundColor = "yellow";
 victoryDiv.style.fontWeight = "bold";
 victoryDiv.style.fontSize = "1.2rem";
 victoryDiv.style.display = "none";
-victoryDiv.textContent = "Congratulations! You Win!";
+victoryDiv.style.zIndex = "1000";
+victoryDiv.textContent = "Congratulations!";
 document.body.append(victoryDiv);
 
 // --- Determine player's current cell ---
@@ -85,8 +86,8 @@ const playerCell = {
 };
 
 // --- Helper functions ---
-function cellKey(i: number, j: number): string {
-  return `cell(${i},${j})`;
+function cellKey(i: number, j: number) {
+  return `${i},${j}`;
 }
 
 function cellBounds(i: number, j: number) {
@@ -131,11 +132,13 @@ function handleCellClick(i: number, j: number) {
     return;
   }
 
-  if (heldToken !== null && cell.value === heldToken) {
+  if (heldToken !== null && cell.value !== null && cell.value === heldToken) {
     const newValue = heldToken * 2;
     heldToken = null;
 
-    if (cell.labelMarker) cell.labelMarker.remove();
+    if (cell.labelMarker) {
+      cell.labelMarker.remove();
+    }
 
     cell.value = newValue;
     cell.labelMarker = L.marker(cellBounds(i, j).getCenter(), {
@@ -159,6 +162,7 @@ function drawCell(i: number, j: number) {
 
   // Reuse persistent cell data if it exists
   let cell = persistentCells.get(key);
+
   if (!cell) {
     const value = generateTokenValue(i, j);
     cell = { value };
@@ -196,6 +200,7 @@ function updateVisibleCells() {
   };
 
   const newVisible = new Set<string>();
+
   for (let i = bottomRight.i; i <= topLeft.i; i++) {
     for (let j = topLeft.j; j <= bottomRight.j; j++) {
       drawCell(i, j);
@@ -234,8 +239,8 @@ function movePlayer(di: number, dj: number) {
   playerCell.i += di;
   playerCell.j += dj;
 
-  const newLat = (playerCell.i + 0.5) * CELL_DEGREES;
-  const newLng = (playerCell.j + 0.5) * CELL_DEGREES;
+  const newLat = playerCell.i * CELL_DEGREES + CELL_DEGREES / 2;
+  const newLng = playerCell.j * CELL_DEGREES + CELL_DEGREES / 2;
   const newLatLng = L.latLng(newLat, newLng);
 
   playerMarker.setLatLng(newLatLng);
