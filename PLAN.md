@@ -37,8 +37,8 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 
 ## D3.b: Globe-spanning Gameplay
 
-Key technical challenge:
-Key gameplay challenge:
+Key technical challenge: How can the game efficiently manage the dynamic generation and removal of cells in a globe-spanning world?
+Key gameplay challenge: How can we create a gameplay loop where the player is incentivized to move in and out of visibility ranges of cells (to farm tokens) while maintaining a sense of progression and challenge, particularly with the crafting system and token values increasing over time?
 
 ### Steps D3.b
 
@@ -51,12 +51,24 @@ Key gameplay challenge:
 
 ## D3.c: Object persistence
 
-Key technical challenge:
-Key gameplay challenge:
+Key technical challenge: How can you efficiently manage memory and data persistence for cells that are off-screen using the Flyweight pattern or a similar strategy, while ensuring that only modified cells are stored and restored when they reappear on the map?
+Key gameplay challenge: How can you ensure that the map appears to have persistent memory of the player's modifications, even when parts of the map are no longer visible, without maintaining a continuous display of all cells?
 
 ### Steps D3.c
 
-- [x] Cell persistent memory state even when not visible
-- [x] Add persistent state to drawCell
-- [x] Make cell clicks persistent
-- [x] Update the visible cells function
+- [x] cell persistent memory state even when not visible
+- [x] add persistent state to drawCell
+- [x] make cell clicks persistent
+- [x] update the visible cells function
+
+## D3.d: Object persistence
+
+Key technical challenge: How can we effectively abstract the player movement system using the Facade design pattern, ensuring that the game code remains decoupled from the specific movement control (geolocation vs. button-based), and persists the game state across page loads using the localStorage API, while also handling potential device orientation limitations or differences in browser geolocation APIs?
+Key gameplay challenge: How can we create a seamless gameplay experience where the player can switch between movement modes (geolocation-based and button-based) without disrupting the flow of the game, and ensure that the player's progress and movement control preferences are maintained across game sessions?
+
+### Steps D3.d
+
+- [] add saving and loading
+- [] on startup, load the game state
+- [] automatically create a save state
+- [] ...
