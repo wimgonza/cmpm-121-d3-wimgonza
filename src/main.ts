@@ -305,7 +305,7 @@ function movePlayer(di: number, dj: number) {
   saveGame();
 }
 
-const directions = [
+const directions: { label: string; di: number; dj: number }[] = [
   { label: "↑", di: 1, dj: 0 },
   { label: "↓", di: -1, dj: 0 },
   { label: "←", di: 0, dj: -1 },
@@ -332,3 +332,61 @@ resetBtn.addEventListener("click", () => {
   location.reload();
 });
 controlPanelDiv.append(resetBtn);
+
+// --- Movement toggle button ---
+const movementToggleBtn = document.createElement("button");
+movementToggleBtn.textContent = "Use GPS";
+movementToggleBtn.style.marginLeft = "1rem";
+movementToggleBtn.style.padding = "0.5rem 1rem";
+movementToggleBtn.style.fontWeight = "bold";
+controlPanelDiv.append(movementToggleBtn);
+
+let useGeolocation = false;
+let geoWatchId: number | null = null;
+
+movementToggleBtn.addEventListener("click", () => {
+  useGeolocation = !useGeolocation;
+
+  if (useGeolocation) {
+    movementToggleBtn.textContent = "Use Buttons";
+    controlPanelDiv.querySelectorAll("button").forEach((btn) => {
+      if (btn !== movementToggleBtn && btn !== resetBtn) {
+        btn.style.display = "none";
+      }
+    });
+    startGeolocation();
+  } else {
+    movementToggleBtn.textContent = "Use GPS";
+    controlPanelDiv.querySelectorAll("button").forEach((btn) => {
+      if (btn !== movementToggleBtn && btn !== resetBtn) {
+        btn.style.display = "inline-block";
+      }
+    });
+    stopGeolocation();
+  }
+});
+
+function startGeolocation() {
+  if (!navigator.geolocation) return alert("Geolocation not supported.");
+  geoWatchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      playerCell.i = Math.floor(latitude / CELL_DEGREES);
+      playerCell.j = Math.floor(longitude / CELL_DEGREES);
+      const newLatLng = L.latLng(latitude, longitude);
+      playerMarker.setLatLng(newLatLng);
+      map.panTo(newLatLng);
+      updateVisibleCells();
+      saveGame();
+    },
+    (err) => console.error("Geolocation error:", err),
+    { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 },
+  );
+}
+
+function stopGeolocation() {
+  if (geoWatchId !== null) {
+    navigator.geolocation.clearWatch(geoWatchId);
+    geoWatchId = null;
+  }
+}

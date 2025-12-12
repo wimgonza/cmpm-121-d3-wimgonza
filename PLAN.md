@@ -71,5 +71,5 @@ Key gameplay challenge: How can we create a seamless gameplay experience where t
 - [x] add start a new game button
 - [x] on startup, load the game state
 - [x] automatically create a save state
-- [] player can move themselves in real life with their device to move the character
-- [] a method to switch between button based and geolocation-based movement
+- [x] player can move themselves in real life with their device to move the character
+- [x] a method to switch between button based and geolocation-based movement
